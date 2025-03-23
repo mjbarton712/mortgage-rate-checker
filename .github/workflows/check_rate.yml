@@ -2,32 +2,26 @@ name: Mortgage Rate Check
 
 on:
   schedule:
-    - cron: "0 12 * * *"  # Runs daily at 12:00 UTC
-  workflow_dispatch:  # Allow manual runs
+    - cron: '0 14 * * 4'  # Every Thursday at 9 AM ET (14:00 UTC)
+  workflow_dispatch:
 
 jobs:
   check-rate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       
       - name: Set up Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
-          python-version: '3.x'
-          
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          python-version: '3.10'
 
-      - name: Debug - List files
-        run: |
-          pwd
-          ls -la
-          
+      - name: Install dependencies
+        run: pip install requests
+
       - name: Run rate check
         env:
-          EMAIL_USER: ${{ secrets.EMAIL_USER }}  # This is relying on there being secrets setup in github
-          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: python mortgage_checker.py
