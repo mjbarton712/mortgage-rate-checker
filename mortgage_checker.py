@@ -19,13 +19,23 @@ def get_rate():
         response.raise_for_status()  # Raise exception for bad status codes
         soup = BeautifulSoup(response.text, 'html.parser')
         
-        rate_element = soup.select_one('html > body > div:nth-of-type(2) > div:nth-of-type(2) > div > p > b')
-        
+        # Try to find any bold element containing the mortgage rate text
+        rate_element = soup.find('b', string=lambda text: text and '30-year fixed mortgage APR' in text)
+
+        # Fallback to any bold element with percentage
+        if not rate_element:
+            print("Fallback to any bold element with percentage and mortgage")
+            rate_element = soup.find('b', string=lambda text: text and '%' in text and 'mortgage' in text.lower())
+    
         if rate_element:
             rate_text = rate_element.get_text().strip()
             # Extract the rate number from the text
-            rate = ''.join(filter(lambda x: x.isdigit() or x == '.', rate_text))
-            return float(rate)
+            import re
+            # Use regex to find the decimal number
+            rate_match = re.search(r'(\d+\.\d+)', rate_text)
+            if rate_match:
+                return float(rate_match.group(1))
+        
         return None
     except Exception as e:
         print(f"Error getting rate: {e}")
