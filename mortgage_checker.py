@@ -4,6 +4,7 @@ import smtplib
 from email.message import EmailMessage
 from datetime import datetime
 from requests_html import HTMLSession
+import re
 
 WEBSITE_URL = "https://www.nerdwallet.com/mortgages/mortgage-rates"
 TARGET_RATE = 7.0  # TODO update to be lower - it is high for testing functionality.
@@ -16,21 +17,19 @@ def get_rate():
         response = session.get(WEBSITE_URL)
         response.html.render(timeout=20)
 
-        # Check a bit more of the content to understand the structure
-        print(response.html.html[:5000])  # Increased preview length
+        # Find the specific element containing both spans
+        rate_container = response.html.find('div.MuiBox-root.nw-tbwrnu', first=True)
 
-        # Try selecting elements with more specific selectors
-        rate_element = response.html.find('span[data-testid="current-rate"]', first=True)
+        if rate_container:
+            # Extract the rate text from the second span within the container
+            rate_element = rate_container.find('span.MuiTypography-root.MuiTypography-textSmallBold.MuiTypography-noWrap.nw-1gsqcw1', first=True)
 
-        if not rate_element:
-            rate_element = response.html.find('b', containing='30-year fixed', first=True)
+            if rate_element:
+                rate_text = rate_element.text.strip()
 
-        if rate_element:
-            rate_text = rate_element.text.strip()
-            import re
-            rate_match = re.search(r'(\d+\.\d+)', rate_text)
-            if rate_match:
-                return float(rate_match.group(1))
+                rate_match = re.search(r'(\d+\.\d+)', rate_text)
+                if rate_match:
+                    return float(rate_match.group(1))
 
         return None
     except Exception as e:
