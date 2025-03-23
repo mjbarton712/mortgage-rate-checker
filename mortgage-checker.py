@@ -11,21 +11,25 @@ SMTP_SERVER = "smtp.gmail.com"  # SMTP specific to gmail - other providers would
 SMTP_PORT = 587
 
 def get_rate():
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-    }
-    response = requests.get(WEBSITE_URL, headers=headers)
-    soup = BeautifulSoup(response.text, 'html.parser')
-    
-    # The current xpath (subject to change) is /html/body/div[2]/div[2]/div/p/b
-    rate_element = soup.select_one('html > body > div:nth-of-type(2) > div:nth-of-type(2) > div > p > b')
-    
-    if rate_element:
-        rate_text = rate_element.get_text().strip()
-        # Extract the rate number from the text
-        rate = ''.join(filter(lambda x: x.isdigit() or x == '.', rate_text))
-        return float(rate)
-    return None
+    try:
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+        }
+        response = requests.get(WEBSITE_URL, headers=headers)
+        response.raise_for_status()  # Raise exception for bad status codes
+        soup = BeautifulSoup(response.text, 'html.parser')
+        
+        rate_element = soup.select_one('html > body > div:nth-of-type(2) > div:nth-of-type(2) > div > p > b')
+        
+        if rate_element:
+            rate_text = rate_element.get_text().strip()
+            # Extract the rate number from the text
+            rate = ''.join(filter(lambda x: x.isdigit() or x == '.', rate_text))
+            return float(rate)
+        return None
+    except Exception as e:
+        print(f"Error getting rate: {e}")
+        return None
 
 def send_notification(current_rate):
     msg = EmailMessage()
