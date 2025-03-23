@@ -8,7 +8,7 @@ import re
 
 WEBSITE_URL = "https://www.nerdwallet.com/mortgages/mortgage-rates"
 TARGET_RATE = 7.0  # TODO update to be lower - it is high for testing functionality.
-SMTP_SERVER = "smtp.gmail.com"  # SMTP specific to gmail - other providers would be diff
+SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT = 587
 
 def get_rate():
@@ -16,6 +16,11 @@ def get_rate():
         session = HTMLSession()
         response = session.get(WEBSITE_URL)
         response.html.render(timeout=20)
+
+        # Save the rendered HTML to a file for inspection
+        with open("rendered_page.html", "w", encoding="utf-8") as f:
+            f.write(response.html.html)
+        print("Rendered HTML saved to rendered_page.html")
 
         # Find the specific element containing both spans
         rate_container = response.html.find('div.MuiBox-root.nw-tbwrnu', first=True)
