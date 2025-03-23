@@ -1,0 +1,16 @@
+# .github/workflows/keep_alive.yml
+name: Repository Keep-Alive
+
+on:
+  schedule:
+    - cron: '0 0 1 * *'  # First of every month at midnight UTC
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: date > last_active.txt
+      - uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: 'chore: Keep-alive commit'
