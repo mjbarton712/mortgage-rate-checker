@@ -10,30 +10,20 @@ TARGET_RATE = 7.0  # TODO update to be lower - it is high for testing functional
 SMTP_SERVER = "smtp.gmail.com"  # SMTP specific to gmail - other providers would be diff
 SMTP_PORT = 587
 
-from requests_html import HTMLSession
-
-WEBSITE_URL = "https://www.nerdwallet.com/mortgages/mortgage-rates"
-
-from requests_html import HTMLSession
-
-WEBSITE_URL = "https://www.nerdwallet.com/mortgages/mortgage-rates"
-
 def get_rate():
     try:
         session = HTMLSession()
         response = session.get(WEBSITE_URL)
         response.html.render(timeout=20)
 
-        # Debug to check if the page content has the rate
-        print(response.html.html[:2000])  # Print more content to see the structure
+        # Check a bit more of the content to understand the structure
+        print(response.html.html[:5000])  # Increased preview length
 
-        # Using XPath equivalent in requests-html
-        # Attempt to find by the first XPath you provided
-        rate_element = response.html.xpath('/html/body/div[2]/div[1]/div/div[2]/div/div[1]/div/div[1]/span[2]', first=True)
-        
+        # Try selecting elements with more specific selectors
+        rate_element = response.html.find('span[data-testid="current-rate"]', first=True)
+
         if not rate_element:
-            # If the first attempt fails, try the alternative XPath
-            rate_element = response.html.xpath('/html/body/div[2]/div[2]/div/p/b', first=True)
+            rate_element = response.html.find('b', containing='30-year fixed', first=True)
 
         if rate_element:
             rate_text = rate_element.text.strip()
@@ -47,6 +37,7 @@ def get_rate():
         print(f"Error getting rate: {e}")
         return None
 
+
 def send_notification(current_rate):
     msg = EmailMessage()
     msg.set_content(f"30-year mortgage rate is now {current_rate}%!\nCheck it out: {WEBSITE_URL}")
@@ -59,6 +50,7 @@ def send_notification(current_rate):
         server.starttls()
         server.login(os.getenv('EMAIL_USER'), os.getenv('EMAIL_PASSWORD'))
         server.send_message(msg)
+
 
 if __name__ == "__main__":
     current_rate = get_rate()
