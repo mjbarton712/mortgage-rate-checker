@@ -10,23 +10,29 @@ TARGET_RATE = 7.0  # TODO update to be lower - it is high for testing functional
 SMTP_SERVER = "smtp.gmail.com"  # SMTP specific to gmail - other providers would be diff
 SMTP_PORT = 587
 
+from requests_html import HTMLSession
+
+WEBSITE_URL = "https://www.nerdwallet.com/mortgages/mortgage-rates"
+
 def get_rate():
     try:
         session = HTMLSession()
         response = session.get(WEBSITE_URL)
-        response.html.render(timeout=20)  # Render JavaScript
-        
-        rate_element = response.html.find('b', containing='30-year fixed mortgage APR')
+        response.html.render(timeout=20)
 
-        if not rate_element:
-            rate_element = response.html.find('b', containing='%', first=True)
-        
+        # Check the page content to ensure it's loading correctly
+        print(response.html.html[:1000])  # Print the first 1000 characters for debugging
+
+        # Try more specific selectors or keyword search
+        rate_element = response.html.find('div[data-testid="30year-fixed-rate"] span', first=True)
+
         if rate_element:
+            rate_text = rate_element.text.strip()
             import re
-            rate_match = re.search(r'(\d+\.\d+)', rate_element.text)
+            rate_match = re.search(r'(\d+\.\d+)', rate_text)
             if rate_match:
                 return float(rate_match.group(1))
-        
+
         return None
     except Exception as e:
         print(f"Error getting rate: {e}")
