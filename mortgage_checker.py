@@ -1,67 +1,38 @@
-import os
 import requests
-import smtplib
-from email.message import EmailMessage
-from datetime import datetime
-from requests_html import HTMLSession
-import re
+import os
 
-WEBSITE_URL = "https://www.nerdwallet.com/mortgages/mortgage-rates"
-TARGET_RATE = 7.0  # TODO update to be lower - it is high for testing functionality.
-SMTP_SERVER = "smtp.gmail.com"
-SMTP_PORT = 587
+# Config
+FRED_API_KEY = os.getenv('FRED_API_KEY')
+SERIES_ID = 'MORTGAGE30US'  # FRED series ID for 30yr fixed rate
+THRESHOLD = 7.0  # TODO change later
 
-def get_rate():
-    try:
-        session = HTMLSession()
-        response = session.get(WEBSITE_URL)
-        response.html.render(timeout=20)
+# Telegram Config (optional)
+TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
+TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
 
-        # Save the rendered HTML to a file for inspection
-        with open("rendered_page.html", "w", encoding="utf-8") as f:
-            f.write(response.html.html)
-        print("Rendered HTML saved to rendered_page.html")
+def get_mortgage_rate():
+    url = f'https://api.stlouisfed.org/fred/series/observations?series_id={SERIES_ID}&api_key={FRED_API_KEY}&file_type=json&sort_order=desc&limit=1'
+    response = requests.get(url)
+    data = response.json()
+    return float(data['observations'][0]['value'])
 
-        # Find the specific element containing both spans
-        rate_container = response.html.find('div.MuiBox-root.nw-tbwrnu', first=True)
-
-        if rate_container:
-            # Extract the rate text from the second span within the container
-            rate_element = rate_container.find('span.MuiTypography-root.MuiTypography-textSmallBold.MuiTypography-noWrap.nw-1gsqcw1', first=True)
-
-            if rate_element:
-                rate_text = rate_element.text.strip()
-
-                rate_match = re.search(r'(\d+\.\d+)', rate_text)
-                if rate_match:
-                    return float(rate_match.group(1))
-
-        return None
-    except Exception as e:
-        print(f"Error getting rate: {e}")
-        return None
-
-
-def send_notification(current_rate):
-    msg = EmailMessage()
-    msg.set_content(f"30-year mortgage rate is now {current_rate}%!\nCheck it out: {WEBSITE_URL}")
+def send_notification(rate):
+    message = f"📉 Mortgage Rate Alert! 30-year fixed rate is {rate}% (below {THRESHOLD}%)"
     
-    msg['Subject'] = f"Mortgage Rate Alert: {current_rate}%!"
-    msg['From'] = os.getenv('EMAIL_USER')
-    msg['To'] = os.getenv('EMAIL_USER')
-    
-    with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
-        server.starttls()
-        server.login(os.getenv('EMAIL_USER'), os.getenv('EMAIL_PASSWORD'))
-        server.send_message(msg)
-
+    # Telegram Notification
+    if TELEGRAM_TOKEN and TELEGRAM_CHAT_ID:
+        requests.post(
+            f'https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage',
+            json={'chat_id': TELEGRAM_CHAT_ID, 'text': message}
+        )
 
 if __name__ == "__main__":
-    current_rate = get_rate()
-    print(f"{datetime.now().strftime('%Y-%m-%d %H:%M')} - Current rate: {current_rate}%")
-    
-    if current_rate and current_rate < TARGET_RATE:
-        print("Rate below threshold! Sending notification...")
-        send_notification(current_rate)
-    else:
-        print("Rate above threshold - no action needed")
+    try:
+        current_rate = get_mortgage_rate()
+        print(f"Current rate: {current_rate}%")
+        
+        if current_rate < THRESHOLD:
+            send_notification(current_rate)
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        raise
