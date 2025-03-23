@@ -4,6 +4,7 @@ from bs4 import BeautifulSoup
 import smtplib
 from email.message import EmailMessage
 from datetime import datetime
+from requests_html import HTMLSession
 
 WEBSITE_URL = "https://www.nerdwallet.com/mortgages/mortgage-rates"
 TARGET_RATE = 7.0  # TODO update to be lower - it is high for testing functionality.
@@ -12,50 +13,21 @@ SMTP_PORT = 587
 
 def get_rate():
     try:
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-        }
-        response = requests.get(WEBSITE_URL, headers=headers)
-        response.raise_for_status()
+        session = HTMLSession()
+        response = session.get(WEBSITE_URL)
+        response.html.render(timeout=20)  # Render JavaScript
         
-        # Print the HTML to debug
-        print("Response status:", response.status_code)
+        rate_element = response.html.find('b', containing='30-year fixed mortgage APR')
+
+        if not rate_element:
+            rate_element = response.html.find('b', containing='%', first=True)
         
-        soup = BeautifulSoup(response.text, 'html.parser')
-        
-        # Try multiple approaches to find the rate
-        
-        # Approach 1: Look for elements with specific text patterns
-        mortgage_elements = soup.find_all(['p', 'div', 'span', 'b'])
-        for element in mortgage_elements:
-            text = element.get_text().strip()
-            if '30-year fixed' in text and '%' in text:
-                print(f"Found potential element: {text}")
-                import re
-                rate_match = re.search(r'(\d+\.\d+)', text)
-                if rate_match:
-                    return float(rate_match.group(1))
-        
-        # Approach 2: Try to find rate in specific containers
-        rate_containers = soup.select('._1bltAMwL._1zDr42Ck, ._1NFBFsHK')  # Common NerdWallet class names
-        for container in rate_containers:
-            text = container.get_text()
-            if '%' in text and ('rate' in text.lower() or 'apr' in text.lower()):
-                print(f"Found in container: {text}")
-                import re
-                rate_match = re.search(r'(\d+\.\d+)', text)
-                if rate_match:
-                    return float(rate_match.group(1))
-        
-        # Approach 3: Dump all percentage values found
-        print("Attempting to find any percentage value...")
-        import re
-        for tag in soup.find_all(text=re.compile(r'\d+\.\d+%')):
-            print(f"Found percentage: {tag.strip()}")
-            rate_match = re.search(r'(\d+\.\d+)', tag.strip())
-            if rate_match and '30' in tag.parent.get_text():
+        if rate_element:
+            import re
+            rate_match = re.search(r'(\d+\.\d+)', rate_element.text)
+            if rate_match:
                 return float(rate_match.group(1))
-                
+        
         return None
     except Exception as e:
         print(f"Error getting rate: {e}")
