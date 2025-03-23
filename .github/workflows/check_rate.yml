@@ -25,4 +25,4 @@ jobs:
         env:
           EMAIL_USER: ${{ secrets.EMAIL_USER }}  # This is relying on there being secrets setup in github
           EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
-        run: python ../mortgage_checker.py
+        run: python mortgage_checker.py
