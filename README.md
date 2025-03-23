@@ -2,7 +2,7 @@
 
 A GitHub-powered bot that monitors 30-year fixed mortgage rates and sends alerts when rates drop below a specified threshold.
 
-[![GitHub Actions](https://img.shields.io/github/actions/workflow/status/mjbarton712/mortgage-rate-checker/check_rates.yml?label=Rate%20Check)](https://github.com/mjbarton712/mortgage-rate-checker/actions)
+[![GitHub Actions](https://img.shields.io/github/actions/workflow/status/mjbarton712/mortgage-rate-checker/check_rate.yml?label=Rate%20Check)](https://github.com/mjbarton712/mortgage-rate-checker/actions)
 
 ---
 
