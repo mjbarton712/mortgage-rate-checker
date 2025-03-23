@@ -14,17 +14,26 @@ from requests_html import HTMLSession
 
 WEBSITE_URL = "https://www.nerdwallet.com/mortgages/mortgage-rates"
 
+from requests_html import HTMLSession
+
+WEBSITE_URL = "https://www.nerdwallet.com/mortgages/mortgage-rates"
+
 def get_rate():
     try:
         session = HTMLSession()
         response = session.get(WEBSITE_URL)
         response.html.render(timeout=20)
 
-        # Check the page content to ensure it's loading correctly
-        print(response.html.html[:1000])  # Print the first 1000 characters for debugging
+        # Debug to check if the page content has the rate
+        print(response.html.html[:2000])  # Print more content to see the structure
 
-        # Try more specific selectors or keyword search
-        rate_element = response.html.find('div[data-testid="30year-fixed-rate"] span', first=True)
+        # Using XPath equivalent in requests-html
+        # Attempt to find by the first XPath you provided
+        rate_element = response.html.xpath('/html/body/div[2]/div[1]/div/div[2]/div/div[1]/div/div[1]/span[2]', first=True)
+        
+        if not rate_element:
+            # If the first attempt fails, try the alternative XPath
+            rate_element = response.html.xpath('/html/body/div[2]/div[2]/div/p/b', first=True)
 
         if rate_element:
             rate_text = rate_element.text.strip()
