@@ -13,6 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - run: git pull origin main  # Ensure the local branch is up-to-date
       - run: date > last_active.txt
       - uses: stefanzweifel/git-auto-commit-action@v5
         with:
