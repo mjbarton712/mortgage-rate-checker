@@ -4,6 +4,7 @@ name: Repository Keep-Alive
 on:
   schedule:
     - cron: '0 0 1 * *'  # First of every month at midnight UTC
+  workflow_dispatch:
 
 permissions:
   contents: write
